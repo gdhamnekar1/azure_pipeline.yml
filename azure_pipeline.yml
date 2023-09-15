@@ -1,0 +1,75 @@
+trigger:
+- '*'
+
+pr:
+- '*'
+
+jobs:
+- job: ListSnapshots
+  displayName: 'List Snapshots and Export to CSV'
+  pool:
+    vmImage: 'windows-latest'
+  steps:
+
+    - task: UsePythonVersion@0
+      inputs:
+        versionSpec: '3.x'
+        addToPath: true
+
+    - script: |
+        pip install azure-cli
+        az login --service-principal --username $(servicePrincipalId) --password $(servicePrincipalKey) --tenant $(tenantId) 
+        az account set --subscription $(subscriptionId)
+      displayName: 'Azure Login'
+
+    - script: |
+        az vm snapshot list --resource-group $(resourceGroup) --query '[].{Name:name, ResourceGroup:resourceGroup, CreationDate:timeCreated}' --out table --output tsv > snapshots.txt
+      displayName: 'List Snapshots'
+
+    - task: PublishPipelineArtifact@1
+      inputs:
+        targetPath: '$(Build.ArtifactStagingDirectory)'
+        artifact: 'snapshots'
+
+- job: ExportToExcel
+  displayName: 'Export to Excel'
+  dependsOn: ListSnapshots
+  pool:
+    vmImage: 'windows-latest'
+  steps:
+
+    - task: UsePythonVersion@0
+      inputs:
+        versionSpec: '3.x'
+        addToPath: true
+
+    - script: |
+        pip install openpyxl
+        python -c "import openpyxl"
+      displayName: 'Install openpyxl'
+
+    - script: |
+        python -c "import openpyxl; wb = openpyxl.Workbook(); ws = wb.active; ws.title = 'Snapshots'; ws.append(['Snapshot Name', 'Resource Group', 'Creation Date']);"
+      displayName: 'Create Excel'
+
+    - script: |
+        python3 <<EOF
+        import openpyxl
+
+        with open("snapshots.txt", "r") as file:
+            data = [line.strip().split() for line in file]
+
+        wb = openpyxl.load_workbook('snapshots.xlsx')
+        ws = wb.active
+
+        for row in data:
+            ws.append(row)
+
+        wb.save("snapshots.xlsx")
+        EOF
+      displayName: 'Update Excel'
+
+    - task: PublishPipelineArtifact@1
+      inputs:
+        targetPath: '$(Build.ArtifactStagingDirectory)'
+        artifact: 'snapshots'
