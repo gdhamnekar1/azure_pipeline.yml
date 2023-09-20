@@ -18,7 +18,7 @@ jobs:
     - task: AzureCLI@2
       displayName: 'Azure Login'
       inputs:
-        azureSubscription: $(43299d92-f1af-4f7d-985d-91b63327503e)
+        azureSubscription: $(6f79126d-0f7b-4f16-915a-b0f1125bbe4f)
         scriptType: pscore
         scriptLocation: inlineScript
         inlineScript: |
@@ -27,7 +27,7 @@ jobs:
     - task: AzureCLI@2
       displayName: 'List Snapshots'
       inputs:
-        azureSubscription: $(43299d92-f1af-4f7d-985d-91b63327503e)
+        azureSubscription: $(6f79126d-0f7b-4f16-915a-b0f1125bbe4f)
         scriptType: pscore
         scriptLocation: inlineScript
         inlineScript: |
