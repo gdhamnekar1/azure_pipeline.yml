@@ -1,4 +1,8 @@
 trigger:
+- task: CopyFiles@2
+  inputs:
+    Contents: '**'
+    TargetFolder: 
 - task: AzureCLI@2
   inputs:
     scriptType: 'ps'
