@@ -1,4 +1,9 @@
 trigger:
+- task: AzureCLI@2
+  inputs:
+    scriptType: 'ps'
+    scriptLocation: 'scriptPath'
+    scriptPath: 
 - '*'
 
 pr:
