@@ -5,69 +5,46 @@ pr:
 - '*'
 
 jobs:
-- job: ListSnapshots
+- job: ListSnapshotsAndExportToCSV
   displayName: 'List Snapshots and Export to CSV'
   pool:
     vmImage: 'windows-latest'
   steps:
-
     - task: UsePythonVersion@0
       inputs:
         versionSpec: '3.x'
         addToPath: true
 
-    - script: |
-        pip install azure-cli
-        az login --service-principal --username $(servicePrincipalId) --password $(servicePrincipalKey) --tenant $(tenantId) 
-        az account set --subscription $(subscriptionId)
+    - task: AzureCLI@2
       displayName: 'Azure Login'
+      inputs:
+        azureSubscription: $(43299d92-f1af-4f7d-985d-91b63327503e)
+        scriptType: pscore
+        scriptLocation: inlineScript
+        inlineScript: |
+          az login --service-principal --username $(servicePrincipalId) --password $(servicePrincipalKey) --tenant $(6f79126d-0f7b-4f16-915a-b0f1125bbe4f) 
 
-    - script: |
-        az vm snapshot list --resource-group $(resourceGroup) --query '[].{Name:name, ResourceGroup:resourceGroup, CreationDate:timeCreated}' --out table --output tsv > snapshots.txt
+    - task: AzureCLI@2
       displayName: 'List Snapshots'
-
-    - task: PublishPipelineArtifact@1
       inputs:
-        targetPath: '$(Build.ArtifactStagingDirectory)'
-        artifact: 'snapshots'
-
-- job: ExportToExcel
-  displayName: 'Export to Excel'
-  dependsOn: ListSnapshots
-  pool:
-    vmImage: 'windows-latest'
-  steps:
-
-    - task: UsePythonVersion@0
-      inputs:
-        versionSpec: '3.x'
-        addToPath: true
+        azureSubscription: $(43299d92-f1af-4f7d-985d-91b63327503e)
+        scriptType: pscore
+        scriptLocation: inlineScript
+        inlineScript: |
+          az snapshot list --query "[].{Name:name, ResourceGroup:resourceGroup, CreationDate:timeCreated}" --output table > snapshots.txt
 
     - script: |
-        pip install openpyxl
-        python -c "import openpyxl"
-      displayName: 'Install openpyxl'
+        python3 -c "import csv
 
-    - script: |
-        python -c "import openpyxl; wb = openpyxl.Workbook(); ws = wb.active; ws.title = 'Snapshots'; ws.append(['Snapshot Name', 'Resource Group', 'Creation Date']);"
-      displayName: 'Create Excel'
-
-    - script: |
-        python3 <<EOF
-        import openpyxl
-
-        with open("snapshots.txt", "r") as file:
+        with open('snapshots.txt', 'r') as file:
             data = [line.strip().split() for line in file]
 
-        wb = openpyxl.load_workbook('snapshots.xlsx')
-        ws = wb.active
-
-        for row in data:
-            ws.append(row)
-
-        wb.save("snapshots.xlsx")
-        EOF
-      displayName: 'Update Excel'
+        with open('snapshots.csv', mode='w', newline='') as csv_file:
+            csv_writer = csv.writer(csv_file, delimiter=',', quotechar='"', quoting=csv.QUOTE_MINIMAL)
+            csv_writer.writerow(['Name', 'ResourceGroup', 'CreationDate'])
+            for row in data:
+                csv_writer.writerow(row)"
+      displayName: 'Export to CSV'
 
     - task: PublishPipelineArtifact@1
       inputs:
