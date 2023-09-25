@@ -1,83 +1,70 @@
 trigger:
-- task: PublishBuildArtifacts@1
-  inputs:
-    PathtoPublish: '$(Build.ArtifactStagingDirectory)'
-    ArtifactName: 'drop'
-    publishLocation: 'Container'
-    TargetFolder: '$(Build.ArtifactStagingDirectory)'
-/azure_pipeline.yml (Line: 7, Col: 3): A mapping was not expected This error is similar to the previous one and indicates an unexpected mapping at line 7, column 3 of your YAML file. In this case, it seems that the scriptPath property in the second AzureCLI task is missing a value.
+  - task: PublishBuildArtifacts@1
+    inputs:
+      PathtoPublish: '$(Build.ArtifactStagingDirectory)'
+      ArtifactName: 'drop'
+      publishLocation: 'Container'
 
-To resolve this error, provide a valid script path for the scriptPath property in the second AzureCLI task.
+  - task: CopyFiles@2
+    inputs:
+      Contents: '**'
+      TargetFolder: '$(Build.ArtifactStagingDirectory)'
 
-/azure_pipeline.yml (Line: 11, Col: 3): A mapping was not expected This error is also similar and indicates an unexpected mapping at line 11, column 3 of your YAML file. It seems that there is a missing value for the scriptPath property in the first AzureCLI task.
-
-To fix this error, provide a valid script path for the scriptPath property in the first AzureCLI task.
-
-After making these changes, your YAML code should look like this:
-
-trigger:
-- task: PublishBuildArtifacts@1
-  inputs:
-    PathtoPublish: '$(Build.ArtifactStagingDirectory)'
-    ArtifactName: 'drop'
-    publishLocation: 'Container'
-- task: CopyFiles@2
-  inputs:
-    Contents: '**'
-    TargetFolder: '$(Build.ArtifactStagingDirectory)'
 - task: AzureCLI@2
   inputs:
     scriptType: 'ps'
     scriptLocation: 'scriptPath'
     scriptPath: '<valid_script_path>'
+
 - '*'
 
 pr:
-- '*'
+  - '*'
 
 jobs:
-- job: ListSnapshotsAndExportToCSV
-  displayName: 'List Snapshots and Export to CSV'
-  pool:
-    vmImage: 'windows-latest'
-  steps:
-    - task: UsePythonVersion@0
-      inputs:
-        versionSpec: '3.x'
-        addToPath: true
+  - job: ListSnapshotsAndExportToCSV
+    displayName: 'List Snapshots and Export to CSV'
+    pool:
+      vmImage: 'windows-latest'
+    
+    steps:
+      - task: UsePythonVersion@0
+        inputs:
+          versionSpec: '3.x'
+          addToPath: true
 
-    - task: AzureCLI@2
-      displayName: 'Azure Login'
-      inputs:
-        azureSubscription: '$(6f79126d-0f7b-4f16-915a-b0f1125bbe4f)'
-        scriptType: pscore
-        scriptLocation: inlineScript
-        inlineScript: |
-          az login --service-principal --username $(0c52b427-5dc8-4de0-b2aa-e1bdfb2a5602) --password $(Gc98Q~hwwTl2qGL6p9c9mnGommV5PbbQ~GO6.doG) --tenant $(6f79126d-0f7b-4f16-915a-b0f1125bbe4f) 
+      - task: AzureCLI@2
+        displayName: 'Azure Login'
+        inputs:
+          azureSubscription: '$(6f79126d-0f7b-4f16-915a-b0f1125bbe4f)'
+          scriptType: pscore
+          scriptLocation: inlineScript
+          inlineScript: |
+            az login --service-principal --username $(0c52b427-5dc8-4de0-b2aa-e1bdfb2a5602) --password $(Gc98Q~hwwTl2qGL6p9c9mnGommV5PbbQ~GO6.doG) --tenant $(6f79126d-0f7b-4f16-915a-b0f1125bbe4f)
 
-    - task: AzureCLI@2
-      displayName: 'List Snapshots'
-      inputs:
-        azureSubscription: '$(6f79126d-0f7b-4f16-915a-b0f1125bbe4f)'
-        scriptType: pscore
-        scriptLocation: inlineScript
-        inlineScript: |
-          az snapshot list --query "[].{Name:name, ResourceGroup:resourceGroup, CreationDate:timeCreated}" --output table > snapshots.txt
+      - task: AzureCLI@2
+        displayName: 'List Snapshots'
+        inputs:
+          azureSubscription: '$(6f79126d-0f7b-4f16-915a-b0f1125bbe4f)'
+          scriptType: pscore
+          scriptLocation: inlineScript
+          inlineScript: |
+            az snapshot list --query "[].{Name:name, ResourceGroup:resourceGroup, CreationDate:timeCreated}" --output table > snapshots.txt
 
-    - script: |
-        python3 -c "import csv
+      - script: |
+          python3 -c "import csv
 
-        with open('snapshots.txt', 'r') as file:
-            data = [line.strip().split() for line in file]
+          with open('snapshots.txt', 'r') as file:
+              data = [line.strip().split() for line in file]
 
-        with open('snapshots.csv', mode='w', newline='') as csv_file:
-            csv_writer = csv.writer(csv_file, delimiter=',', quotechar='"', quoting=csv.QUOTE_MINIMAL)
-            csv_writer.writerow(['Name', 'ResourceGroup', 'CreationDate'])
-            for row in data:
-                csv_writer.writerow(row)"
-      displayName: 'Export to CSV'
+          with open('snapshots.csv', mode='w', newline='') as csv_file:
+              csv_writer = csv.writer(csv_file, delimiter=',', quotechar='"', quoting=csv.QUOTE_MINIMAL)
+              csv_writer.writerow(['Name', 'ResourceGroup', 'CreationDate'])
+              for row in data:
+                  csv_writer.writerow(row)"
+        displayName: 'Export to CSV'
 
-    - task: PublishPipelineArtifact@1
-      inputs:
-        targetPath: '$(Build.ArtifactStagingDirectory)'
-        artifact: 'snapshots
+      - task: PublishPipelineArtifact@1
+        inputs:
+          targetPath: '$(Build.ArtifactStagingDirectory)'
+          artifact: 'snapshots'
