@@ -1,6 +1,9 @@
-- task: CopyFiles@2
+trigger:
+- task: PublishBuildArtifacts@1
   inputs:
-    Contents: '**'
+    PathtoPublish: '$(Build.ArtifactStagingDirectory)'
+    ArtifactName: 'drop'
+    publishLocation: 'Container'
     TargetFolder: '$(Build.ArtifactStagingDirectory)'
 /azure_pipeline.yml (Line: 7, Col: 3): A mapping was not expected This error is similar to the previous one and indicates an unexpected mapping at line 7, column 3 of your YAML file. In this case, it seems that the scriptPath property in the second AzureCLI task is missing a value.
 
