@@ -1,3 +1,17 @@
+- task: CopyFiles@2
+  inputs:
+    Contents: '**'
+    TargetFolder: '$(Build.ArtifactStagingDirectory)'
+/azure_pipeline.yml (Line: 7, Col: 3): A mapping was not expected This error is similar to the previous one and indicates an unexpected mapping at line 7, column 3 of your YAML file. In this case, it seems that the scriptPath property in the second AzureCLI task is missing a value.
+
+To resolve this error, provide a valid script path for the scriptPath property in the second AzureCLI task.
+
+/azure_pipeline.yml (Line: 11, Col: 3): A mapping was not expected This error is also similar and indicates an unexpected mapping at line 11, column 3 of your YAML file. It seems that there is a missing value for the scriptPath property in the first AzureCLI task.
+
+To fix this error, provide a valid script path for the scriptPath property in the first AzureCLI task.
+
+After making these changes, your YAML code should look like this:
+
 trigger:
 - task: PublishBuildArtifacts@1
   inputs:
@@ -7,12 +21,12 @@ trigger:
 - task: CopyFiles@2
   inputs:
     Contents: '**'
-    TargetFolder: 
+    TargetFolder: '$(Build.ArtifactStagingDirectory)'
 - task: AzureCLI@2
   inputs:
     scriptType: 'ps'
     scriptLocation: 'scriptPath'
-    scriptPath: 
+    scriptPath: '<valid_script_path>'
 - '*'
 
 pr:
@@ -32,7 +46,7 @@ jobs:
     - task: AzureCLI@2
       displayName: 'Azure Login'
       inputs:
-        azureSubscription: $(6f79126d-0f7b-4f16-915a-b0f1125bbe4f)
+        azureSubscription: '$(6f79126d-0f7b-4f16-915a-b0f1125bbe4f)'
         scriptType: pscore
         scriptLocation: inlineScript
         inlineScript: |
@@ -41,7 +55,7 @@ jobs:
     - task: AzureCLI@2
       displayName: 'List Snapshots'
       inputs:
-        azureSubscription: $(6f79126d-0f7b-4f16-915a-b0f1125bbe4f)
+        azureSubscription: '$(6f79126d-0f7b-4f16-915a-b0f1125bbe4f)'
         scriptType: pscore
         scriptLocation: inlineScript
         inlineScript: |
@@ -63,4 +77,4 @@ jobs:
     - task: PublishPipelineArtifact@1
       inputs:
         targetPath: '$(Build.ArtifactStagingDirectory)'
-        artifact: 'snapshots'
+        artifact: 'snapshots
